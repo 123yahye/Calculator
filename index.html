@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Poppins');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .cal {
+            width: 400px;
+            background-color: #585f6e;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 5px 5px 30px 10px rgba(0, 0, 0, 0.3);
+        }
+        .cal-input {
+            width: 100%;
+            border: none;
+            font-size: 35px;
+            text-align: right;
+            padding: 10px;
+            background-color: #585f6e;
+            color: #54b662;
+        }
+        #oper-input {
+            font-size: 20px;
+            color: #fff;
+        }
+        .cal-gride {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-gap: 15px;
+        }
+        .equal {
+            grid-column: span 2;
+            border-radius: 50px;
+        }
+        button {
+            padding: 20px;
+            font-size: 24px;
+            border: none;
+            border-radius: 45%;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #ccddce;
+        }
+        .operation {
+            background-color: #54b662;
+        }
+        .operation:hover {
+            background-color: #7bc286;
+        }
+        .history-page {
+            position: absolute;
+            width: 380px;
+            background-color: #4daf56;
+            height: 410px;
+            color: #fff;
+            padding: 18px;
+            border-radius: 10px;
+            font-size: 25px;
+            overflow: auto;
+            display: none;
+        }
+        .history-icon {
+            color: #fff;
+            font-size: 30px;
+            position: relative;
+            left: 2%;
+            cursor: pointer;
+        }
+        .history-page.active {
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="cal">
+            <div class="cal-func">
+                <i class="fa fa-history history-icon"></i>
+                <input type="text" id="oper-input" class="cal-input" value="0" disabled>
+                <input type="text" id="res-input" class="cal-input" value="0" disabled>
+            </div>
+            <div class="history-page">
+                <div class="history-head">
+                    <h4>History</h4>
+                    <i class="fa fa-trash"></i>
+                </div>
+                <div class="history-operation">
+                    <div class="history-element"></div>
+                </div>
+            </div>
+            <div class="cal-gride">
+                <button class="operation" value="+">+</button>
+                <button class="operation" value="-">-</button>
+                <button class="operation" value="*">*</button>
+                <button class="operation" value="/">/</button>
+                <button value="9">9</button>
+                <button value="8">8</button>
+                <button value="7">7</button>
+                <button class="operation" value="C">C</button>
+                <button value="6">6</button>
+                <button value="5">5</button>
+                <button value="4">4</button>
+                <button class="operation" value="CA">CA</button>
+                <button value="3">3</button>
+                <button value="2">2</button>
+                <button value="1">1</button>
+                <button class="operation" value="%">%</button>
+                <button value="0">0</button>
+                <button value=".">.</button>
+                <button class="operation equal" value="=">=</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+      let button = document.querySelectorAll("button");
+let resInput = document.querySelector("#res-input");
+let opInput = document.querySelector("#oper-input");
+let historyIcon = document.querySelector(".history-icon");
+let historyPage = document.querySelector(".history-page");
+let historyElement = document.querySelector(".history-element");
+let clearHistoryButton = document.querySelector(".fa-trash");
+
+let valueOne = "";
+let valueTwo = "";
+let operation = "";
+let option2 = false;
+
+// Load history from localStorage
+let history = JSON.parse(localStorage.getItem("calcHistory")) || [];
+displayHistory();
+
+button.forEach(btn => {
+    btn.addEventListener("click", (e) => {
+        if (btn.value === "CA") {
+            // Clear all inputs
+            clearAll();
+        } else if (btn.value === "C") {
+            // Clear the last input
+            clearInput(opInput);
+        } else if (btn.classList.contains("operation")) {
+            // Operation button clicked
+            if (btn.value !== "=") {
+                if (opInput.value !== "") {
+                    option2 = true;
+                    valueOne = opInput.value;
+                    operation = btn.value;
+                    opInput.value = `${valueOne} ${operation}`;
+                }
+            } else {
+                if (option2 && valueTwo !== "") {
+                    // Perform the calculation
+                    let expression = `${valueOne} ${operation} ${valueTwo}`;
+                    let result = eval(expression);
+                    resInput.value = `${result}`;
+
+                    // Save to history
+                    addToHistory(`${expression} = ${result}`);
+
+                    // Reset after calculation
+                    valueOne = resInput.value;
+                    valueTwo = "";
+                    operation = "";
+                    option2 = false;
+                }
+            }
+        } else {
+            // Number or decimal point pressed
+            if (option2) {
+                valueTwo += btn.value;
+                opInput.value = `${valueOne} ${operation} ${valueTwo}`;
+            } else {
+                valueOne += btn.value;
+                opInput.value = valueOne;
+            }
+        }
+    });
+});
+
+// Function to clear the last input
+function clearInput(input) {
+    let currentResult = input.value.split("");
+    currentResult.pop();
+    input.value = currentResult.join("") || "0";
+
+    if (!input.value.includes(operation)) {
+        option2 = false;
+        valueTwo = "";
+    }
+}
+
+// Function to clear all inputs
+function clearAll() {
+    opInput.value = "0";
+    resInput.value = "0";
+    valueOne = "";
+    valueTwo = "";
+    operation = "";
+    option2 = false;
+}
+
+// Function to add calculation to history
+function addToHistory(entry) {
+    history.push(entry);
+    localStorage.setItem("calcHistory", JSON.stringify(history)); // Save to localStorage
+    displayHistory();
+}
+
+// Function to display history
+function displayHistory() {
+    historyElement.innerHTML = "";  // Clear previous history
+    history.forEach(item => {
+        let historyItem = document.createElement("div");
+        historyItem.textContent = item;
+        historyElement.appendChild(historyItem);
+    });
+}
+
+// Toggle history display
+historyIcon.addEventListener("click", () => {
+    historyPage.classList.toggle("active");
+});
+
+// Clear history
+clearHistoryButton.addEventListener("click", () => {
+    history = [];
+    localStorage.removeItem("calcHistory"); // Remove from localStorage
+    displayHistory();
+});
+
+
+    </script>
+</body>
+</html>
